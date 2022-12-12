@@ -11,13 +11,20 @@
 #define START_X 70
 #define START_Y 110
 
-// #define HEIGHT 70
-// #define WIDTH 100
+// #define HEIGHT 50
+// #define WIDTH 150
 
-// #define START_X 50
-// #define START_Y 35
+// #define START_X 70
+// #define START_Y 25
 
 using namespace std;
+
+void initiate_coords(int coords[10][2]) {
+    for (int i = 0; i < 10; i++) {
+        coords[i][0] = START_X;
+        coords[i][1] = START_Y;
+    }
+}
 
 void move_tail(int& tail_x, int& tail_y, int head_x, int head_y) {
     if (tail_x == head_x) {
@@ -34,6 +41,18 @@ void move_tail(int& tail_x, int& tail_y, int head_x, int head_y) {
         } else if (head_x == tail_x - 2) {
             tail_x--;
         }
+    } else if (head_x == tail_x + 2 && head_y == tail_y + 2) {
+        tail_x++;
+        tail_y++;
+    } else if (head_x == tail_x + 2 && head_y == tail_y - 2) {
+        tail_x++;
+        tail_y--;
+    } else if (head_x == tail_x - 2 && head_y == tail_y + 2) {
+        tail_x--;
+        tail_y++;
+    } else if (head_x == tail_x - 2 && head_y == tail_y - 2) {
+        tail_x--;
+        tail_y--;
     } else {
         if (head_x == tail_x + 2) {
             if (head_y == tail_y + 1) {
@@ -90,12 +109,15 @@ void clear_grid(string grid[HEIGHT][WIDTH]) {
     }
 }
 
-void execute(string grid[HEIGHT][WIDTH], int head_x, int head_y, int& tail_x, int& tail_y) {
+void execute(string grid[HEIGHT][WIDTH], int rope_coords[10][2]) {
     // populate grid with '+'
-        move_tail(tail_x, tail_y, head_x, head_y);
         // clear_grid(grid);
-        grid[tail_y][tail_x] = "\033[1;36mT\033[0m";
-        // grid[head_y][head_x] = "\033[1;31mH\033[0m";
+        // grid[rope_coords[0][1]][rope_coords[0][0]] = "\033[1;33mH\033[0m";
+        for (int i = 1; i < 10; i++) {
+            move_tail(rope_coords[i][0], rope_coords[i][1], rope_coords[i-1][0], rope_coords[i-1][1]);
+            // grid[rope_coords[i][1]][rope_coords[i][0]] = ("\033[1;36m" + to_string(i) + "\033[0m");
+        }
+        grid[rope_coords[9][1]][rope_coords[9][0]] = "\033[1;31mT\033[0m";
         // system("clear");
         // print_grid(grid);
         // std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -107,18 +129,16 @@ int main() {
     
     string line;
 
-    int head_x = START_X;
-    int head_y = START_Y;
-
-    int tail_x = START_X;
-    int tail_y = START_Y;
+    int rope_coords[10][2];
+    initiate_coords(rope_coords);
 
     string grid[HEIGHT][WIDTH];
 
     clear_grid(grid);
 
     // grid[START_Y][START_X] = "\033[1;32mB\033[0m";
-    grid[START_Y][START_X] = "\033[1;36mT\033[0m";
+    // grid[START_Y][START_X] = "\033[1;36mH\033[0m";
+    // print_grid(grid);
 
     std::cout << endl << endl;
 
@@ -133,23 +153,23 @@ int main() {
 
         if (d == "R") {
             for (int i = 0; i < n; i++) {
-                ++head_x;
-                execute(grid, head_x, head_y, tail_x, tail_y);
+                ++rope_coords[0][0];
+                execute(grid, rope_coords);
             }
         } else if (d == "L") {
             for (int i = 0; i < n; i++) {
-                --head_x;
-                execute(grid, head_x, head_y, tail_x, tail_y);
+                --rope_coords[0][0];
+                execute(grid, rope_coords);
             }
         } else if (d == "U") {
             for (int i = 0; i < n; i++) {
-                --head_y;
-                execute(grid, head_x, head_y, tail_x, tail_y);
+                --rope_coords[0][1];
+                execute(grid, rope_coords);
             }
         } else if (d == "D") {
             for (int i = 0; i < n; i++) {
-                ++head_y;
-                execute(grid, head_x, head_y, tail_x, tail_y);
+                ++rope_coords[0][1];
+                execute(grid, rope_coords);
             }
         }
     }
@@ -160,7 +180,7 @@ int main() {
     int count = 0;
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
-            if (grid[i][j] == "\033[1;36mT\033[0m") {
+            if (grid[i][j] == "\033[1;31mT\033[0m") {
                 count++;
             }
         }
