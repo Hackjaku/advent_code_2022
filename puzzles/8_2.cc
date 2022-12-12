@@ -2,10 +2,11 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <vector>
 
 using namespace std;
 
-bool is_visible(int, int, const int[99][99]);
+int view_score(int, int, const int[99][99]);
 
 int main() {
     fstream data("../inputs/8.txt", ios::in);
@@ -29,55 +30,79 @@ int main() {
         ++i;
     }
 
-    int visible_count = 0;
+    view_score(52, 14, tree_map);
+
+    vector<int> scores;
+
     for (int i = 0; i < 99; i++) {
         for (int j = 0; j < 99; j++) {
-            if (is_visible(i, j, tree_map)) {
-                ++visible_count;
-            }
+            scores.push_back(view_score(i, j, tree_map));
         }
     }
 
-    cout << visible_count << endl;
+    int max = 0;
+    for (int i = 0; i < scores.size(); i++) {
+        if (scores[i] > max) {
+            max = scores[i];
+        }
+    }
+
+    cout << max << endl;
+
     return 0;
 }
 
-bool is_visible(int row, int column, const int tree_map[99][99]) {
-    if (row == 0 || column == 0 || row == 98 || column == 98) {
-        return true;
-    }
+int view_score(int row, int column, const int tree_map[99][99]) {
+    int left_score = 0;
+    int right_score = 0;
+    int top_score = 0;
+    int bottom_score = 0;
 
     int value = tree_map[row][column];
 
     top:
+    if (row == 0) {
+        return 0;
+    }
     for (int i = row - 1; i >= 0; --i) {
+        ++top_score;
         if (tree_map[i][column] >= value) {
             goto bottom;
         }
     }
-    return true;
 
     bottom:
+    if (row == 98) {
+        return 0;
+    }
     for (int i = row + 1; i < 99; ++i) {
+        ++bottom_score;
         if (tree_map[i][column] >= value) {
             goto left;
         }
     }
-    return true;
 
     left:
+    if (column == 0) {
+        return 0;
+    }
     for (int i = column - 1; i >= 0; --i) {
+        ++left_score;
         if (tree_map[row][i] >= value) {
             goto right;
         }
     }
-    return true;
 
     right:
+    if (column == 98) {
+        return 0;
+    }
     for (int i = column + 1; i < 99; ++i) {
+        ++right_score;
         if (tree_map[row][i] >= value) {
-            return false;
+            break;
         }
     }
-    return true;
+
+    return top_score * bottom_score * left_score * right_score;
 }
