@@ -1,17 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <iomanip>
-
-// #define COMMON_MULTIPLE 96577
-#define COMMON_MULTIPLE 9699690
 
 using namespace std;
 
 struct Monkey {
 public:
     int divisibility_test;
-    vector<unsigned long long> items;
+    vector<int> items;
     int operation;
 
     Monkey* on_success; // throw to monkey if
@@ -23,8 +19,8 @@ public:
     void receive_item(int);
     virtual void inspect_items() {};
 
-    Monkey(vector<unsigned long long>, int, int, Monkey*, Monkey*);
-    Monkey(vector<unsigned long long>, int, int);
+    Monkey(vector<int>, int, int, Monkey*, Monkey*);
+    Monkey(vector<int>, int, int);
 };
 
 struct CarelessMonkey : public Monkey {
@@ -84,16 +80,12 @@ int main() {
     // monkeys[3]->on_success = monkeys[0];
     // monkeys[3]->on_failure = monkeys[1];
 
-    for (int round = 0; round < 10000; ++round) {
-        // print round percentage
-        cout << "\r" << fixed << setprecision(2) << (round / 10000.0) * 100 << "%";
+    for (int round = 0; round < 20; ++round) {
         for (int i = 0; i < monkeys.size(); i++) {
             monkeys[i]->inspect_items();
             monkeys[i]->throw_items();
         }
     }
-
-    cout << endl;
 
     for (int i = 0; i < monkeys.size(); i++) {
         cout << "Monkey " << i << " inspected " << monkeys[i]->items_inspected << " items." << endl;
@@ -106,12 +98,9 @@ void CarelessMonkey::inspect_items() {
     for (int i = 0; i < items.size(); i++) {
         ++items_inspected;
         if (operation != 0) {
-            items[i] = (items[i] * operation);
+            items[i] = round((items[i] * operation) / 3);
         } else {
-            items[i] = (items[i] * items[i]); // extremely careless
-        }
-        while (items[i] > COMMON_MULTIPLE) {
-            items[i] -= COMMON_MULTIPLE;
+            items[i] = round((items[i] * items[i]) / 3); // extremely careless
         }
     }
 }
@@ -119,10 +108,7 @@ void CarelessMonkey::inspect_items() {
 void CarefulMonkey::inspect_items() {
     for (int i = 0; i < items.size(); i++) {
         ++items_inspected;
-        items[i] = (items[i] + operation);
-        while (items[i] > COMMON_MULTIPLE) {
-            items[i] -= COMMON_MULTIPLE;
-        }
+        items[i] = round((items[i] + operation) / 3);
     }
 }
 
@@ -137,7 +123,7 @@ void Monkey::throw_items() {
     items.clear();
 }
 
-Monkey::Monkey(vector<unsigned long long> items, int divisibility_test, int operation, Monkey* on_success, Monkey* on_failure) {
+Monkey::Monkey(vector<int> items, int divisibility_test, int operation, Monkey* on_success, Monkey* on_failure) {
     this->items = items;
     this->divisibility_test = divisibility_test;
     this->operation = operation;
@@ -145,7 +131,7 @@ Monkey::Monkey(vector<unsigned long long> items, int divisibility_test, int oper
     this->on_failure = on_failure;
 }
 
-Monkey::Monkey(vector<unsigned long long> items, int divisibility_test, int operation) {
+Monkey::Monkey(vector<int> items, int divisibility_test, int operation) {
     this->items = items;
     this->divisibility_test = divisibility_test;
     this->operation = operation;
