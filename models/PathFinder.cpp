@@ -79,26 +79,26 @@ int PathFinder::computeShortestPath() {
         return -1;
     }
 
-    for (int i = 0; i < this->maze.size(); ++i) {
-        for (int j = 0; j < this->maze[0].size(); ++j) {
-            if (this->maze[i][j] >= 'a' && this->maze[i][j] <= 'z') {
-                Vertex v = Vertex(i, j, 0);
-                if (v.coords == this->destination.coords) {
-                    cout << "\033[1;36mX\033[0m ";
-                } else if (v.coords == this->start.coords) {
-                    cout << "\033[1;33mO\033[0m ";
-                } else if (shortestPath <= v) {
-                    cout << ("\033[1;32m") << this->maze[i][j] << "\033[0m ";
-                } else {
-                    cout << "\033[1;34m" << this->maze[i][j] << "\033[0m ";
-                }
-            } else {
-                cout << "\033[1;31m+\033[0m ";
-            }
-        }
-        cout << endl;
-    }
-    cout << endl << endl;
+    // for (int i = 0; i < this->maze.size(); ++i) {
+    //     for (int j = 0; j < this->maze[0].size(); ++j) {
+    //         if (this->maze[i][j] >= 'a' && this->maze[i][j] <= 'z') {
+    //             Vertex v = Vertex(i, j, 0);
+    //             if (v.coords == this->destination.coords) {
+    //                 cout << "\033[1;36mX\033[0m ";
+    //             } else if (v.coords == this->start.coords) {
+    //                 cout << "\033[1;33mO\033[0m ";
+    //             } else if (shortestPath <= v) {
+    //                 cout << ("\033[1;32m") << this->maze[i][j] << "\033[0m ";
+    //             } else {
+    //                 cout << "\033[1;34m" << this->maze[i][j] << "\033[0m ";
+    //             }
+    //         } else {
+    //             cout << "\033[1;31m+\033[0m ";
+    //         }
+    //     }
+    //     cout << endl;
+    // }
+    // cout << endl << endl;
     
     return shortestPath.size();
 }
@@ -208,6 +208,13 @@ void PathFinder::setStart() {
     this->adjacent.clear();
     this->visited.clear();
     this->start = Vertex(row, col, 0);
+}
+
+void PathFinder::setStart(int row, int col) {
+    this->adjacent.clear();
+    this->visited.clear();
+    this->start = Vertex(row, col, 0);
+    this->maze[row][col] = 'a';
 }
 
 void PathFinder::setDestination() {

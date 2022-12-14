@@ -35,6 +35,7 @@ class PathFinder {
         
         void setMaze(std::vector<std::vector<char>>);
         void setStart();
+        void setStart(int, int);
         void setDestination();
         void printMaze();
         bool isViable();

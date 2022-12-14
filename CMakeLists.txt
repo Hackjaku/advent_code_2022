@@ -16,7 +16,7 @@ add_executable(${PROJECT_NAME} main.cc)
 
 find_package(Boost 1.79.0 REQUIRED)
 
-aux_source_directory(utils UTIL_SRC)
+aux_source_directory(models MODEL_SRC)
 
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
