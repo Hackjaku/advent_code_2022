@@ -23,7 +23,7 @@ void PathFinder::addVisited(Vertex v) {
         if (this->visited <= adj) {
             continue;
         } else {
-            if (this->maze[adj.coords.first][adj.coords.second] >= this->maze[v.coords.first][v.coords.second] - 1) {
+            if (this->maze[adj.coords.first][adj.coords.second] <= this->maze[v.coords.first][v.coords.second] + 1) {
                 this->visited.push_back(adj);
             }
         }
@@ -39,16 +39,8 @@ int PathFinder::getVisitedDistanceFromCoords(int x, int y) {
     return -1;
 }
 
-bool PathFinder::hasVisitedCharacter(char c) {
-    for (auto &v : this->visited) {
-        if (this->maze[v.coords.first][v.coords.second] == c) {
-            return true;
-        }
-    }
-    return false;
-}
-
 int PathFinder::computeShortestPath() {
+
     this->visited.push_back(this->start);
     for (int i = 0; i < this->visited.size(); ++i) {
         Vertex current = this->visited[i];
@@ -56,8 +48,10 @@ int PathFinder::computeShortestPath() {
         this->addVisited(current);
         this->adjacent.clear();
     }
+    // Vertex destination = Vertex(this->maze.size() - 1, this->maze[0].size() - 1);
+    // return (this->visitedV <= destination);
     vector<Vertex> shortestPath;
-    if (hasVisitedCharacter('a')) {
+    if (this->visited <= this->destination) {
         int distance = 0;
         for (const auto &val : this->visited) {
             if (val.coords == this->destination.coords) {
@@ -105,6 +99,7 @@ int PathFinder::computeShortestPath() {
         cout << endl;
     }
     cout << endl << endl;
+    
     return shortestPath.size();
 }
 
@@ -202,8 +197,8 @@ void PathFinder::setStart() {
     int col = 0;
     for (int i = 0; i < this->maze.size(); ++i) {
         for (int j = 0; j < this->maze[0].size(); ++j) {
-            if (this->maze[i][j] == 'E') {
-                this->maze[i][j] = 'z';
+            if (this->maze[i][j] == 'S') {
+                this->maze[i][j] = 'a';
                 row = i;
                 col = j;
                 break;
@@ -220,8 +215,8 @@ void PathFinder::setDestination() {
     int col = 0;
     for (int i = 0; i < this->maze.size(); ++i) {
         for (int j = 0; j < this->maze[0].size(); ++j) {
-            if (this->maze[i][j] == 'S') {
-                this->maze[i][j] = 'a';
+            if (this->maze[i][j] == 'E') {
+                this->maze[i][j] = 'z';
                 row = i;
                 col = j;
                 break;

@@ -28,7 +28,6 @@ class PathFinder {
         void addAdjacents(Vertex vertex);
         void addVisited(Vertex v);
         int getVisitedDistanceFromCoords(int, int);
-        bool hasVisitedCharacter(char);
 
     public:
         PathFinder(std::vector<std::vector<char>> mazeVec);

@@ -53,7 +53,7 @@ int main() {
     pf.setStart();
     pf.setDestination();
 
-    cout << pf.computeShortestPath();
+    cout << pf.computeShortestPath() << endl;
     
     return 0;
 }
