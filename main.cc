@@ -1,94 +1,148 @@
+
+#pragma GCC optimize("O3,inline,omit-frame-pointer,unroll-loops")
 #include <iostream>
-#include <fstream>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <cstring>
 
 using namespace std;
 
-int calculate_distance(int x_a, int x_b, int y_a, int y_b) {
-    return abs(x_a - x_b) + abs(y_a - y_b);
-}
+class SensorBeaconPair {
+public:
 
-int calculate_covered_space(int x, int y, int nearest_beacon_distance, int perpendicular_distance) {
-    int iteration = nearest_beacon_distance - perpendicular_distance;
-    if (iteration < 0) {
-        return 0;
+    int sensorRow;
+    int sensorCol;
+    int beconRow;
+    int beconCol;
+    int mDist;
+
+    int calmDist() {
+        return abs(sensorCol - beconCol) + abs(sensorRow - beconRow);
     }
-    int covered_space = 1;
-    for (int i = 0; i < iteration; i++) {
-        covered_space += 2;
+
+};
+
+
+size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
+{
+    size_t pos = txt.find( ch );
+    size_t initialPos = 0;
+    strs.clear();
+
+    // Decompose statement
+    while( pos != std::string::npos ) {
+        strs.push_back( txt.substr( initialPos, pos - initialPos ) );
+        initialPos = pos + 1;
+
+        pos = txt.find( ch, initialPos );
     }
-    return covered_space;
+
+    // Add the last one
+    strs.push_back( txt.substr( initialPos, std::min( pos, txt.size() ) - initialPos + 1 ) );
+
+    return strs.size();
 }
 
-void row_coverage(int x, int y, int nearest_beacon_distance, int perpendicular_distance, int& from_x, int& to_x) {
-    int covered_space = calculate_covered_space(x, y, nearest_beacon_distance, perpendicular_distance);
-    from_x = x - covered_space / 2;
-    to_x = x + covered_space / 2;
-}
 
-vector<int> distances;
-vector<pair<int, int>> sensors;
-vector<pair<int,int>> beacons;
 
-int main() {
-    fstream data("../inputs/15.txt", ios::in);
-    
+int main()
+{
+
     string line;
+    ifstream myfile; 
 
-    while(getline(data, line)) {
-        int sensor_x, sensor_y, beacon_x, beacon_y;
-        std::istringstream iss(line);
-        if (!(iss >> sensor_x >> sensor_y >> beacon_x >> beacon_y)) { 
-            break;
-        }
+    vector<SensorBeaconPair> pairs;
 
-        // do stuff
-        distances.push_back(calculate_distance(sensor_x, beacon_x, sensor_y, beacon_y));
-        pair<int, int> sensor = make_pair(sensor_x, sensor_y);
-        sensors.push_back(sensor);
+    myfile.open("../inputs/15.txt");
+    // int row = 2000000; // 10;
+    // int minCol = -3909820; //-5;
+    // int maxCol = 49372790; //25;
 
-        pair<int, int> beacon = make_pair(beacon_x, beacon_y);
-        // push if not already in the vector
-        if (find(beacons.begin(), beacons.end(), beacon) == beacons.end()) {
-            beacons.push_back(beacon);
+    // PART 2
+    int minCol = 0;
+    int maxCol = 4000000; //20;
+    int minRow = minCol;
+    int maxRow = maxCol;
+
+    while ( getline (myfile,line) ) {
+
+
+        vector<string> s;
+        vector<string> ss;
+        SensorBeaconPair sbp;
+
+        split(line,s,' ');
+        split(s[0],ss,',');
+        sbp.sensorRow = stoi(ss[1]);
+        sbp.sensorCol = stoi(ss[0]);
+
+        split(s[1],ss,',');
+        sbp.beconRow = stoi(ss[1]);
+        sbp.beconCol = stoi(ss[0]);
+        sbp.mDist = sbp.calmDist();
+
+        pairs.push_back(sbp);
+
+    }
+
+    // PART 1
+//    int n = 0;
+//    for (int c = minCol; c<=maxCol; c++) {
+//        int r = row;
+//        for (SensorBeaconPair sbp : pairs) {
+//            int dist = abs(sbp.sensorCol - c) + abs(sbp.sensorRow - r);
+//            if (dist <= sbp.mDist()) {
+//                // check if there is a sensor or beacon there
+//                bool found = false;
+//                for (SensorBeaconPair sb : pairs) {
+//                    if (sb.beconCol == c && sb.beconRow == r) { found = true;}
+//                    if (sb.sensorCol == c && sb.sensorRow == r) { found = true;}
+//                }
+//                if (!found) {n++;}
+//                break;
+//            }
+//        }
+//       // cerr << r << "," << c << " " << n << endl;
+//    }
+//    cout << n << endl;
+
+    // PART 2
+    for (int c = minCol; c<=maxCol; c++) {       
+        for (int r = minRow; r<=maxRow; r++) {
+
+            // check if there is a sensor or beacon there
+            bool found = false;
+            for (SensorBeaconPair sb : pairs) {
+                if (sb.beconCol == c && sb.beconRow == r) { found = true;}
+                if (sb.sensorCol == c && sb.sensorRow == r) { found = true;}
+            }
+            if (!found) {
+                bool possibleLocation = true;
+                for (SensorBeaconPair sbp : pairs) {
+                    int dist = abs(sbp.sensorCol - c) + abs(sbp.sensorRow - r);
+                    if (dist <= sbp.mDist) {
+                        possibleLocation = false;   
+                        // To speed up, we can jump over some rows   
+                        r = sbp.sensorRow + sbp.mDist - abs( sbp.sensorCol - c ) ;
+                        break;
+                    }
+                }
+                if (possibleLocation && c>0 ) {      
+                    long long freq = 4000000 * (long long)c + (long long)r;
+                    cout << freq << endl;
+                }
+            }
         }
     }
 
-    vector<pair<int, int>> coverages;
+    myfile.close();
 
-    for (int i = 0; i < sensors.size(); i++) {
-        int x = sensors[i].first;
-        int y = sensors[i].second;
-        int distance = abs(y - 2000000);
-        int from_x, to_x;
-        row_coverage(x, y, distances[i], distance, from_x, to_x);
-        pair<int, int> coverage = make_pair(from_x, to_x);
-        // cout << "sensor: " << i << " covers from " << from_x << " to " << to_x << endl;
-        coverages.push_back(coverage);
-    }
-
-    cout << "done" << endl;
-
-    int min_x = coverages[0].first;
-    int max_x = coverages[0].second;
-
-    for (int i = 1; i < coverages.size(); i++) {
-        if (coverages[i].first < min_x) {
-            min_x = coverages[i].first;
-        }
-        if (coverages[i].second > max_x) {
-            max_x = coverages[i].second;
-        }
-    }
-
-    cout << "min_x: " << min_x << endl;
-    cout << "max_x: " << max_x << endl;
-
-    int covered_space = max_x - min_x;
-    cout << "covered space: " << covered_space << endl;
-
-    return 0;
 }
+
+
+
+
+
+
