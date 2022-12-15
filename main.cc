@@ -7,13 +7,13 @@
 
 using namespace std;
 
-#define HEIGHT 200
-#define WIDTH 550
+#define HEIGHT 164
+#define WIDTH 700
 
 #define SOURCE_X 500
 #define SOURCE_Y 0
 
-bool add_sand(string maze[HEIGHT][WIDTH]);
+void add_sand(string maze[HEIGHT][WIDTH]);
 
 int main() {
     fstream data("../inputs/14.txt", ios::in);
@@ -29,7 +29,6 @@ int main() {
     }
 
     maze[SOURCE_Y][SOURCE_X] = "\033[1;36m+\033[0m";
-
 
     while(getline(data, line)) {
         std::istringstream iss(line);
@@ -74,31 +73,38 @@ int main() {
         }
     }
 
-    int count = 0;
-    while (add_sand(maze)) {
-        ++count;
-    }
-    // print maze
-    for (int i = 0; i < HEIGHT; i++) {
-        for (int j = 0; j < WIDTH; j++) {
-            cout << maze[i][j];
-        }
-        cout << endl;
+    for (int i = 0; i < WIDTH; ++i) {
+        maze[HEIGHT - 1][i] = "\033[1;31m#\033[0m";
     }
 
+    int count = 0;
+
+    while (true) {
+        add_sand(maze);
+        ++count;
+        if (maze[SOURCE_Y][SOURCE_X] == "\033[1;32mo\033[0m") {
+            break;
+        }
+    }
     cout << count << endl;
+
+    // print maze
+    // cout << endl << endl;
+    // for (int i = 0; i < HEIGHT; i++) {
+    //     for (int j = 0; j < WIDTH; j++) {
+    //         cout << maze[i][j];
+    //     }
+    //     cout << endl;
+    // }
+
 
     return 0;
 }
 
-bool add_sand(string maze[HEIGHT][WIDTH]) {
+void add_sand(string maze[HEIGHT][WIDTH]) {
     bool at_rest = false;
     int x = SOURCE_X, y = SOURCE_Y;
     while (!at_rest) {
-
-        if (y == HEIGHT - 1) {
-            return false;
-        }
 
         if (maze[y + 1][x] == "\033[1;30m.\033[0m") {
             ++y;
@@ -115,9 +121,8 @@ bool add_sand(string maze[HEIGHT][WIDTH]) {
             } else {
                 maze[y][x] = "\033[1;32mo\033[0m";
                 at_rest = true;
-                return true;
+                return;
             }
         }
     }
-    return false;
 }
