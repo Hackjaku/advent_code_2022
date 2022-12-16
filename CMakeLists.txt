@@ -22,6 +22,6 @@ target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                    ${CMAKE_CURRENT_SOURCE_DIR}/models)
 target_sources(${PROJECT_NAME}
-               PRIVATE
-               ${SRC_DIR}
-               ${MODEL_SRC})
+                PRIVATE
+                ${SRC_DIR}
+                ${MODEL_SRC})
