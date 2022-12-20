@@ -6,7 +6,7 @@
 using namespace std;
 
 int main() {
-    fstream data("../inputs/10.txt", ios::in);
+    fstream data("../inputs/20.txt", ios::in);
     
     string line;
 
