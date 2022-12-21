@@ -133,7 +133,6 @@ int main() {
     cout << "ME: ";
 
     cout << me->get_number() << endl;
-    
 
     return 0;
 }
