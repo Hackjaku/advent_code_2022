@@ -1,156 +1,325 @@
-#include <array>
-#include <fstream>
 #include <iostream>
-#include <limits>
-#include <map>
-#include <optional>
+#include <vector>
 #include <set>
-#include <sstream>
-#include <utility>
+#include <map>
+#include <sstream>    // stringstream
+#include <algorithm>  // sort
+#include <queue>
+#include <stack>
 
-#include <istream>
-#include <regex>
-#include <string>
-#include <string_view>
+// C
+#include <cstdio>
+#include <cstdlib>  // atoi, malloc
+#include <climits>  // INT_MIN
+#include <ctype.h>  // isdigit
+// #include <cstring>  // I mean, if you really wanted to
 
-#include <cerrno>
-#include <charconv>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
+using namespace std;
 
-int int_match(const std::smatch& m, int k);
-std::string& eatline(std::istream& is, std::string& buf);
-[[noreturn]] void die(const std::string_view msg);
+// For debugging
+#define REPORT( X ) cout << #X " = " << X << endl
+// like echo -n
+#define REPORTN( X ) cout << #X << " = " << ( X ) << ", "
+#define REPORTP( M ) fprintf( stdout, "%s = (%d,%d)\n", #M, M.row, M.col )
 
-[[noreturn]] void die(const std::string_view msg) {
-    std::cerr << msg << std::endl;
-    std::exit(1);
+// Aliasing
+#define forn( X ) \
+for ( int _i = 0; _i < ( X ); _i++ )
+
+// Point syntactic sugar
+typedef int i_t;
+typedef pair<i_t,i_t> pi;
+// Grid
+#define row first
+#define col second
+// Raw points
+// #define x first
+// #define y second
+#define mp( X, Y ) make_pair( (i_t)(X), (i_t)(Y) )
+
+// Apadted from
+// https://stackoverflow.com/a/21956177/18633613
+// (https://stackoverflow.com/questions/21956119/add-stdpair-with-operator)
+pi operator+(const pi& a, const pi& b) {
+    return make_pair(a.first + b.first, a.second + b.second);
 }
 
-std::string& eatline(std::istream& is, std::string& buf) {
-    if (!std::getline(is, buf)) die(strerror(errno));
-    return buf;
-}
-
-int int_match(const std::smatch& m, int k) {
-    int val;
-    auto result = std::from_chars<int>(&*m[k].first, &*m[k].second, val);
-    if (result.ec != std::errc()) die("bad int: " + m.str());
-    return val;
+// Scaling
+pi operator*(const int a, const pi& p) {
+    return {a * p.first, a * p.second};
 }
 
 
-struct pt {
-    int row, col;
-};
-bool operator<(pt a, pt b) {
-    return std::pair{a.row, a.col} < std::pair{b.row, b.col};
-}
-pt add(pt a, pt b) { return {a.row + b.row, a.col + b.col}; }
+// After template
 
-bool any_adjacent(const std::set<pt>& elves, pt p) {
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue;
-            if (elves.count({p.row + i, p.col + j})) return true;
-        }
+// Dimensions of the (inner) grid
+int rows, cols;
+
+pi start = { 0, 1 };
+pi dest;
+
+// ( row, col )
+// Sorted heuristically
+pi dirs[]  {    { 0, 1 },  { 1, 0 }, { 0, 0 }, { 0, -1 },  { -1, 0 } };
+enum Index {    rightIdx,  downIdx,  stayIdx,  leftIdx,    upIdx };
+
+// 1-indexed points -> direction(s) of sprites
+// pos -> vector<dir>
+typedef map<pi,vector<pi>> sprites_t;
+
+// direction point from ch
+static pi getDir( char ch )
+{
+  switch ( ch ) {
+    case '^':
+      return dirs[ upIdx ];
+    case 'v':
+      return dirs[ downIdx ];
+    case '<':
+      return dirs[ leftIdx ];
+    case '>':
+      return dirs[ rightIdx ];
+    default:
+      cerr << "Invalid dir (getDir)" << endl;
+      REPORT( ch );
+      exit( 1 );
+  }
+}
+
+// Essentialy, getDir^-1
+static char getSpriteChar( pi dir )
+{
+  if ( dir == dirs[ upIdx ] )
+    return '^';
+  else if ( dir == dirs[ downIdx ] )
+    return 'v';
+  else if ( dir == dirs[ leftIdx ] )
+    return '<';
+  else if ( dir == dirs[ rightIdx ] )
+    return '>';
+  
+  // else
+  cerr << "Invalid dir (getDir)" << endl;
+  REPORTP( dir );
+  exit( 1 );
+}
+
+// P
+static char getCell( const sprites_t& sprites, pi p )
+{
+  auto it = sprites.find( p );
+  if ( it == sprites.end() )
+    return '.';
+  
+  int size = it->second.size();
+  if ( size > 1 ) {
+    if ( size > 9 ) {
+      return '@';
     }
+    return '0' + size;
+  } else if ( size == 1 ) {
+    return getSpriteChar( it->second[ 0 ] );
+  } else {
+    cerr << "Invalid cell" << endl;
+    REPORT( size );
+    exit( 1 );
+  }
+}
+
+static bool detectCycle( set<pi>& positions, pi pos ) {
+  return ! positions.insert( pos ).second;
+}
+
+static void printGrid( FILE *fp, const sprites_t& sprites, pi person )
+{
+  if ( fp == stdout )
+    return;
+
+  // Check sprite size
+  int spriteSize = 0;
+  for ( auto it : sprites ) {
+    spriteSize++;
+  }
+  REPORT( sprites.size() );
+  REPORT( spriteSize );
+
+  // First line
+  fprintf( fp, "#%c", person == start ? 'E' : '.' );
+  for ( int i = 0; i < cols - 1; i++ )
+    fprintf( fp, "#" );
+  fprintf( fp, "#\n" );
+
+  // Body
+  for ( int i = 0; i < rows; i++ ) {
+    fprintf( fp, "#" );
+
+    for ( int col = 1; col <= cols; col++ )
+      fprintf( fp, "%c", person == mp( i + 1, col ) ? 'E' : getCell( sprites, { i + 1, col } ) );
+
+    fprintf( fp, "#\n" );
+  }
+
+  // Last line
+  fprintf( fp, "#" );
+  for ( int i = 0; i < cols - 1; i++ )
+    fprintf( fp, "#" );
+  fprintf( fp, "%c#\n", person == mp( rows + 1, cols ) ? 'E' : '.' );
+}
+
+static bool collision( const sprites_t& sprites, pi p, int minutes )
+{
+  // Safe haven
+  if ( p == start || p == dest )
     return false;
-}
+  
+  // Check all 4 candidates
 
-struct decision {
-    std::array<pt, 3> must_be_empty;
-    pt step;
-};
-constexpr decision kDecisions[] = {
-    {std::array{pt{-1, 0}, pt{-1, 1}, pt{-1, -1}}, {-1, 0}},
-    {std::array{pt{1, 0}, pt{1, 1}, pt{1, -1}}, {1, 0}},
-    {std::array{pt{0, -1}, pt{-1, -1}, pt{1, -1}}, {0, -1}},
-    {std::array{pt{0, 1}, pt{-1, 1}, pt{1, 1}}, {0, 1}},
-};
-
-bool satisfies(const std::set<pt>& elves, pt elf, const decision& d) {
-    for (pt dir : d.must_be_empty) {
-        pt nbr = add(elf, dir);
-        if (elves.count(nbr)) return false;
-    }
+  // up, looking v
+  pi up = p + minutes * dirs[ upIdx ];
+  up.row %= rows;
+  if ( up.row <= 0 )
+    up.row += rows;
+  sprites_t::const_iterator it;
+  if ( ( it = sprites.find( up ) ) != sprites.end() && it->second[ 0 ] == dirs[ downIdx ] )
     return true;
+
+
+  // down, looking ^
+  pi down = p + minutes * dirs[ downIdx ];
+  down.row = ( down.row - 1 ) % rows + 1;
+  if ( ( it = sprites.find( down ) ) != sprites.end() && it->second[ 0 ] == dirs[ upIdx ] )
+    return true;
+  
+  // left, looking >
+  pi left = p + minutes * dirs[ leftIdx ];
+  left.col %= cols;
+  if ( left.col <= 0 )
+    left.col += cols;
+  if ( ( it = sprites.find( left ) ) != sprites.end() && it->second[ 0 ] == dirs[ rightIdx ] )
+    return true;
+  
+  // right, looking <
+  pi right = p + minutes * dirs[ rightIdx ];
+  right.col = ( right.col - 1 ) % cols + 1;
+  if ( ( it = sprites.find( right ) ) != sprites.end() && it->second[ 0 ] == dirs[ leftIdx ] )
+    return true;
+
+  return false;
 }
 
-std::optional<pt> propose(const std::set<pt>& elves, pt elf, int i) {
-    if (!any_adjacent(elves, elf)) return {};
-    for (int j = 0; j < 4; j++) {
-        int k = (i + j) % 4;
-        const auto& decision = kDecisions[k];
-        if (satisfies(elves, elf, decision)) {
-            return add(elf, decision.step);
+sprites_t initial;
+int maxMinutes;
+static bool reachDest( pi person, int minutes )
+{
+  // Shadowing
+  pi start = person;
+
+  set<pi> positions;
+  queue<pi> q;
+  q.push( person );
+  for (;;) {
+    // sprites = updateSprites( sprites );
+    positions.clear();
+
+    // printGrid( stdout, sprites, person );
+    minutes++;
+
+    if ( minutes == maxMinutes ) {
+      REPORT( maxMinutes );
+      return false;
+    }
+
+    // Let person explore options using DFS
+    size_t size = q.size();
+    if ( minutes % 100 == 0 ) {
+      REPORT( minutes );
+      REPORT( size );
+    }
+    switch( size ) {
+      case 0:
+        cerr << "size is 0" << endl;
+        exit( 1 );
+      default:
+        if ( (signed)size > rows * cols + 1 ) {
+          cerr << "size too big" << endl;
+          REPORT( size );
+          exit( 1 );
         }
     }
-    return {};
-}
 
-std::map<pt, std::vector<pt>> propose(const std::set<pt>& elves, int i) {
-    std::map<pt, std::vector<pt>> all;
-    for (pt elf : elves) {
-        if (auto pt = propose(elves, elf, i); pt) all[*pt].push_back(elf);
-    }
-    return all;
-}
+    for ( size_t i = 0; i < size; i++ ) {
+      person = q.front();
+      // printGrid( stdout, sprites, person );
+      q.pop();
 
-bool tick(std::set<pt>& elves, int i) {
-    auto proposals = propose(elves, i);
-    bool moved = false;
-    for (auto [dest, candidates] : proposals) {
-        if (candidates.size() == 1) {
-            elves.erase(candidates[0]);
-            elves.insert(dest);
-            moved = true;
+      for ( int i = 0; i < 5; i++ ) {
+        pi dir = dirs[ i ];
+        pi pos = person + dir;
+
+        // printf( "(%d,%d) + (%d,%d) = (%d,%d)\n",
+        //         person.row, person.col,
+        //         dir.row,    dir.col,
+        //         pos.row,    pos.col );
+
+        if ( pos == dest ) {
+          REPORT( minutes );
+          return true;
         }
-    }
-    return moved;
-}
+        
+        // Don't hit a sprite or the wall
+        if ( pos != start
+            && ( pos.row <= 0 || pos.row > rows
+            || pos.col <= 0 || pos.col > cols
+            || collision( initial, pos, minutes ) ) )
+          continue;
 
-std::set<pt> parse(std::istream&& is) {
-    std::set<pt> elves;
-    std::string line;
-    for (int row = 0; std::getline(is, line); row++) {
-        for (int col = 0; col < line.size(); col++) {
-            if (line[col] == '#') elves.insert({.row = row, .col = col});
+        // Next layer
+        if ( !detectCycle( positions, pos ) ) {
+          q.push( pos );
         }
+      }
     }
-    return elves;
+  }
 }
 
-constexpr int kMinInt = std::numeric_limits<int>::min();
-constexpr int kMaxInt = std::numeric_limits<int>::max();
+int main( int argc, char *argv[] )
+{
+  if ( argc == 2 )
+    maxMinutes = atoi( argv[ 1 ] );
+  else
+    maxMinutes = INT_MAX;
 
-std::pair<pt, pt> bounds(const std::set<pt>& elves) {
-    int min_row = kMaxInt, max_row = kMinInt;
-    int min_col = kMaxInt, max_col = kMinInt;
-    for (pt p : elves) {
-        min_row = std::min(min_row, p.row), max_row = std::max(max_row, p.row);
-        min_col = std::min(min_col, p.col), max_col = std::max(max_col, p.col);
+  string line;
+  // First line
+  getline( cin, line );
+  pi person = start;
+  REPORTP( person );
+
+  cols = line.size() - 2;
+
+
+  // Quickly tell if there is at least one sprite
+  for ( rows = 0; getline( cin, line ) && line[ 1 ] != '#'; rows++ ) {
+    for ( int col = 1; col <= cols; col++ ) {
+      if ( line[ col ] != '.' ) {
+        pi pos = { rows + 1, col };
+        pi dir = getDir( line[ col ] );
+        initial[ pos ].push_back( dir );
+      }
     }
-    return {{min_row, min_col}, {max_row, max_col}};
-}
+  }
 
-int size(const std::pair<pt, pt>& bounds) {
-    return (bounds.second.row - bounds.first.row + 1) *
-           (bounds.second.col - bounds.first.col + 1);
-}
+  // Last line
+  dest = { rows + 1, line.size() - 2 };
+  REPORTP( dest );
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) die("usage: day23 <file>");
-    std::set<pt> elves = parse(std::ifstream(argv[1]));
+  FILE *parse = fopen( "PARSE", "w" );
+  printGrid( parse, initial, { -1, -1 } );
+  fclose( parse );
 
-    std::set<pt> elves1 = elves;
-    for (int i = 0; i < 10; i++) tick(elves1, i);
-    std::cout << (size(bounds(elves1)) - elves1.size()) << std::endl;
-
-    std::set<pt> elves2 = elves;
-    int i = 0;
-    while (tick(elves2, i++))
-        ;
-    std::cout << i << std::endl;
+  int minutes = 0;
+  if ( !reachDest( person, minutes ) ) {
+    cerr << "Never reached dest" << endl;
+    exit( 1 );
+  }
 }
